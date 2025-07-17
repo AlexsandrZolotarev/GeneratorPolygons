@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-version: "3.4"
 services:
   app:
     image: node:14.15
@@ -64,7 +63,8 @@ services:
     container_name: wcstore-cli
     image: ghcr.io/noi-techpark/it.bz.opendatahub.webcomponents/it.bz.opendatahub.webcomponents-local-wcs-cli:latest
     env_file: .env
-    command: ./wait-for -t 0 api:${API_SERVER_PORT} -- python webcompstore-cli.py --push ${WC_VERSION}
+    command: ./wait-for -t 5 api:${API_SERVER_PORT} -- python webcompstore-cli.py --push ${WC_VERSION}
+    restart: on-failure
     depends_on:
       - api
     volumes:
