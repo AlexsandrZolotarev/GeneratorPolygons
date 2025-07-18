@@ -1,8 +1,7 @@
 {
-  "title": "Hello-world",
-  "shortName": "hello-world-2",
-  "description": "Hello world simple webcomp example",
-  "descriptionAbstract": "Hello world simple webcomp example",
+  "title": "Test Task",
+  "shortName": "test-task",
+  "description": "Test Task for Triymf",
   "license": "AGPL-3.0-or-later",
   "repositoryUrl": "https://your-repository.git",
   "copyrightHolders": [
@@ -15,8 +14,8 @@
   ],
   "authors": [
     {
-      "name": "...",
-      "email": "...",
+      "name": "Alexsandr Zolotarev",
+      "email": "masterblacksmith@mail.ru",
       "organization": "...",
       "organizationUrl": "..."
     }
