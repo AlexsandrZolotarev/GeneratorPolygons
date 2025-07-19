@@ -1,73 +1,32 @@
+import Sortable from "sortablejs";
 import { getRandomNumber } from "../../utils/random";
+import { generateSvgPolygons } from "../../utils/svg-generator";
 
 const template = document.createElement("template");
 template.innerHTML = `
 <style>
-      .buffer-zone__controls { 
-        display: flex;
-        flex-direction: row;
-        padding-block: 1em;
-        padding-inline: 2em;
-        list-style: none;
-      }
-      .buffer-zone  {
-       background-color: #c8c8c8;
-      }
-     .buffer-zone__button{
-        padding: 15px 50px;
-        border: none;
-        border-radius: 5px;
-        background-color: #969696;
-      }
-      .buffer-zone__button--save{
-        margin-right: 10px;
-      }
-      .buffer-zone__controls{
-        background-color: #323232;
-      }
-      .left
-      {
-        margin-left: auto;
-      }
-      .section__area-buffer{
-        height: 400px;
-      }
-      .buffer-zone__body{
+      .buffer-zone{
         display: flex;
         flex-wrap: wrap;
         overflow: auto;
         background-color: #323232;
-        margin-top:15px;
         height: 400px;
       }
-      .buffer-zone__button:hover {
-       background-color: #5c5c5cff;
+      svg {
+      -webkit-user-drag: element;
       }
-      .buffer-zone__button:active {
-       background-color: #01820eff;
-      }
+      .sortable-ghost {
+      opacity: 0.6 !important;
+      border: 2px dashed lime !important;
+      background-color: rgba(0, 255, 0, 0.3) !important;
+    }
+    .sortable-chosen {
+      outline: 2px solid green;
+    }
   </style>
-<div class="buffer-zone">
-  <ul class="buffer-zone__controls">
-    <li class="buffer-zone__controls-item">
-      <button class="buffer-zone__button buffer-zone__button--create">
-        Create
-      </button>
-    </li>
-    <li class="buffer-zone__controls-item left">
-      <button class="buffer-zone__button buffer-zone__button--save">
-        Save
-      </button>
-    </li>
-    <li class="buffer-zone__controls-item">
-      <button class="buffer-zone__button buffer-zone__button--reset">
-        Reset
-      </button>
-    </li>
-  </ul>
-  <div class="buffer-zone__body">
+  <div class="buffer-zone">
   </div>
-</div>
+
 `;
 
 class BufferZone extends HTMLElement {
@@ -77,24 +36,24 @@ class BufferZone extends HTMLElement {
     shadow.appendChild(template.content.cloneNode(true));
   }
   connectedCallback() {
-    this.bufferZone = this.shadowRoot.querySelector(".buffer-zone__body");
-    this.btnCreate = this.shadowRoot.querySelector(".buffer-zone__button--create");
-    this.btnCreate.addEventListener("click", () => this.generatePolygons());
-
-    this.btnReset = this.shadowRoot.querySelector(".buffer-zone__button--reset");
-    this.btnReset.addEventListener("click", () => this.deletePolygons());
-
-    this.btnSave = this.shadowRoot.querySelector(".buffer-zone__button--save");
-    this.btnSave.addEventListener("click", () => this.savePolygons());
+    this.bufferZone = this.shadowRoot.querySelector(".buffer-zone");
+    Sortable.create(this.bufferZone, {
+     group: {
+        name: 'polygons',
+        pull: true,  
+        put: true  
+      },
+      animation: 150,
+      sort: false,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen'
+    });
     this.loadPolygons();
   }
   disconnectedCallback() {
-    this.btnCreate.removeEventListener("click", this.generatePolygons);
-    this.btnReset.removeEventListener("click", this.deletePolygons);
-    this.btnSave.removeEventListener("click", this.savePolygons);
   }
   loadPolygons() {
-    const saved = localStorage.getItem("polygons");
+    const saved = localStorage.getItem("polygonsBufferZone");
     if (!saved) return;
     let htmlArray;
     try {
@@ -111,47 +70,21 @@ class BufferZone extends HTMLElement {
       }
     });
   }
-
-  savePolygons() {
-    if (this.bufferZone.children.length) {
-      const arraySvg = Array.from(this.bufferZone.querySelectorAll("svg")).map(
-        (svg) => svg.outerHTML
-      );
-      localStorage.setItem("polygons", JSON.stringify(arraySvg));
-    }
+  saveBufferZone() {
+    const arr = Array.from(this.bufferZone.querySelectorAll('svg'))
+      .map(svg => svg.outerHTML);
+    localStorage.setItem('polygonsBufferZone', JSON.stringify(arr));
+  }
+  clearBufferZone() {
+    this.bufferZone.innerHTML = '';
+    localStorage.removeItem('polygonsBufferZone');
   }
   deletePolygons() {
     this.bufferZone.innerHTML = "";
-    localStorage.removeItem("polygons");
+    localStorage.removeItem("polygonsBufferZone");
   }
   generatePolygons() {
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("draggable", "true");
-    svg.setAttribute("viewBox", "0 0 100 100");
-    svg.setAttribute("width", `${getRandomNumber(80, 200)}`);
-    svg.setAttribute("height", `${getRandomNumber(80, 200)}`);
-
-    const sides = getRandomNumber(3, 8);
-    const cx = 50,
-      cy = 50;
-    const baseR = 40;
-    const pts = [];
-
-    for (let j = 0; j < sides; j++) {
-      const angle = (j / sides) * Math.PI * 2;
-      const r = baseR * (0.8 + Math.random() * 0.4);
-      const x = cx + Math.cos(angle) * r;
-      const y = cy + Math.sin(angle) * r;
-      pts.push(`${x},${y}`);
-    }
-
-    const poly = document.createElementNS(svgNS, "polygon");
-    poly.setAttribute("points", pts.join(" "));
-    poly.setAttribute("fill", "#910023");
-    svg.appendChild(poly);
-
-    this.bufferZone.appendChild(svg);
+    generateSvgPolygons(this.bufferZone);
   }
 }
 customElements.define("buffer-zone", BufferZone);

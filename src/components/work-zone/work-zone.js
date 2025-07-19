@@ -1,4 +1,4 @@
-// src/components/work-zone/index.js
+import Sortable from "sortablejs";
 
 const SIZE = 128;
 const template = document.createElement("template");
@@ -49,18 +49,19 @@ template.innerHTML = `
     .axis-x, .axis-y {
       position: absolute;
       pointer-events: none;
-      font: 12px sans-serif;
+      font: 15px sans-serif;
       color: #000;
-      background: #c8c8c8;
+      background: #595858ff;
     }
     .axis-x {
       bottom: 0; left: 0;
       height: 24px;
       width: 100%;
+      padding-bottom: 10px;
     }
     .axis-x span {
       position: absolute;
-      bottom: 0;
+      bottom: 5px;
       transform: translateX(-50%);
     }
     .axis-y {
@@ -73,6 +74,14 @@ template.innerHTML = `
       left: 33%;
       transform: translateY(-50%);
     }
+      .sortable-ghost {
+      opacity: 0.6 !important;
+      border: 2px dashed lime !important;
+      background-color: rgba(0, 255, 0, 0.3) !important;
+    }
+    .sortable-chosen {
+      outline: 2px solid green;
+    }
   </style>
 
   <div class="grid"></div>
@@ -84,33 +93,91 @@ template.innerHTML = `
 export class WorkZone extends HTMLElement {
   constructor() {
     super();
-    this.attachShadow({ mode: "open" })
-        .appendChild(template.content.cloneNode(true));
-
-    this.gridElement    = this.shadowRoot.querySelector(".grid");
+    this.attachShadow({ mode: "open" }).appendChild(
+      template.content.cloneNode(true)
+    );
+    this.gridElement = this.shadowRoot.querySelector(".grid");
     this.contentElement = this.shadowRoot.querySelector(".content");
     this.axisXContainer = this.shadowRoot.querySelector(".axis-x");
     this.axisYContainer = this.shadowRoot.querySelector(".axis-y");
 
     this.scaleFactor = 1;
-    this.offsetX     = 0;
-    this.offsetY     = 0;
+    this.offsetX = 0;
+    this.offsetY = 0;
 
-    this.onWheel     = this.onWheel.bind(this);
+    this.onWheel = this.onWheel.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
   }
 
   connectedCallback() {
     this.addEventListener("wheel", this.onWheel, { passive: false });
     this.addEventListener("mousedown", this.onMouseDown);
+    Sortable.create(this.contentElement, {
+      group: {
+        name: "polygons",
+        pull: true,
+        put: true,
+      },
+      animation: 150,
+      sort: false,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      onEnd: this.updatePosition.bind(this),
+    });
+    this.loadPolygons();
     this.updateView();
   }
+  updatePosition() {
+    this.contentElement.querySelectorAll("svg").forEach((svg) => {
+      const rect = svg.getBoundingClientRect();
+      const parentRect = this.contentElement.getBoundingClientRect();
 
+      const x = (rect.left - parentRect.left) / this.scaleFactor - this.offsetX;
+      const y = (rect.top - parentRect.top) / this.scaleFactor - this.offsetY;
+      svg.style.position = "absolute";
+      svg.style.left = `${x}px`;
+      svg.style.top = `${y}px`;
+    });
+
+    this.saveWorkZone();
+  }
+  saveWorkZone() {
+    const arr = Array.from(this.contentElement.querySelectorAll("svg")).map(
+      (svg) => ({
+        svg: svg.outerHTML,
+        left: parseFloat(svg.style.left) || 0,
+        top: parseFloat(svg.style.top) || 0,
+      })
+    );
+    localStorage.setItem("polygonsWorkZone", JSON.stringify(arr));
+  }
+  clearWorkZone() {
+    this.contentElement.innerHTML = "";
+    localStorage.removeItem("polygonsWorkZone");
+  }
   disconnectedCallback() {
     this.removeEventListener("wheel", this.onWheel);
     this.removeEventListener("mousedown", this.onMouseDown);
   }
+  loadPolygons() {
+    const saved = localStorage.getItem("polygonsWorkZone");
+    if (!saved) return;
+    let items;
+    try {
+      items = JSON.parse(saved);
+    } catch {
+      return;
+    }
 
+    items.forEach(({ svg: svgString, left, top }) => {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = svgString;
+      const svg = wrapper.firstElementChild;
+      if (!svg || svg.tagName.toLowerCase() !== "svg") return;
+
+      this.contentElement.appendChild(svg);
+    });
+  }
   updateView() {
     const cellPx = SIZE * this.scaleFactor;
     const gridOffsetX = this.offsetX % cellPx;
@@ -118,8 +185,8 @@ export class WorkZone extends HTMLElement {
 
     const hostStyle = this.shadowRoot.host.style;
     hostStyle.setProperty("--scale-factor", this.scaleFactor);
-    hostStyle.setProperty("--offset-x",     `${this.offsetX}px`);
-    hostStyle.setProperty("--offset-y",     `${this.offsetY}px`);
+    hostStyle.setProperty("--offset-x", `${this.offsetX}px`);
+    hostStyle.setProperty("--offset-y", `${this.offsetY}px`);
     hostStyle.setProperty("--grid-offset-x", `${gridOffsetX}px`);
     hostStyle.setProperty("--grid-offset-y", `${gridOffsetY}px`);
 
@@ -127,29 +194,29 @@ export class WorkZone extends HTMLElement {
   }
 
   renderAxes() {
-  const cellPx = SIZE * this.scaleFactor;
-  const width  = this.clientWidth;
-  const height = this.clientHeight;
+    const cellPx = SIZE * this.scaleFactor;
+    const width = this.clientWidth;
+    const height = this.clientHeight;
 
-  this.axisXContainer.innerHTML = "";
-  for (let x = 0; x <= width + cellPx; x += cellPx) {
-    const worldX = Math.round((x - this.offsetX) / cellPx) * 10;
-    const labelX = document.createElement("span");
-    labelX.textContent = worldX;
-    labelX.style.left = `${x}px`;
-    this.axisXContainer.appendChild(labelX);
-  }
+    this.axisXContainer.innerHTML = "";
+    for (let x = 0; x <= width + cellPx; x += cellPx) {
+      const worldX = Math.round((x - this.offsetX) / cellPx) * 10;
+      const labelX = document.createElement("span");
+      labelX.textContent = worldX;
+      labelX.style.left = `${x}px`;
+      this.axisXContainer.appendChild(labelX);
+    }
 
-  this.axisYContainer.innerHTML = "";
-  for (let y = 0; y <= height + cellPx; y += cellPx) {
-    let worldY = Math.round((y + this.offsetY) / cellPx) * 10;
-    if (worldY < 0) worldY = 0;
-    const labelY = document.createElement("span");
-    labelY.textContent = worldY;
-    labelY.style.bottom = `${y}px`;
-    this.axisYContainer.appendChild(labelY);
+    this.axisYContainer.innerHTML = "";
+    for (let y = 0; y <= height + cellPx; y += cellPx) {
+      let worldY = Math.round((y + this.offsetY) / cellPx) * 10;
+      if (worldY < 0) worldY = 0;
+      const labelY = document.createElement("span");
+      labelY.textContent = worldY;
+      labelY.style.bottom = `${y}px`;
+      this.axisYContainer.appendChild(labelY);
+    }
   }
-}
 
   onWheel(event) {
     event.preventDefault();
@@ -162,10 +229,12 @@ export class WorkZone extends HTMLElement {
     if (event.button !== 0) return;
     event.preventDefault();
 
-    const startX = event.clientX, startY = event.clientY;
-    const origX  = this.offsetX, origY  = this.offsetY;
+    const startX = event.clientX,
+      startY = event.clientY;
+    const origX = this.offsetX,
+      origY = this.offsetY;
 
-    const onMouseMove = moveEvent => {
+    const onMouseMove = (moveEvent) => {
       const newOffsetX = origX + (moveEvent.clientX - startX);
       const newOffsetY = origY + (moveEvent.clientY - startY);
 
@@ -177,12 +246,12 @@ export class WorkZone extends HTMLElement {
 
     const onMouseUp = () => {
       window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup",   onMouseUp);
+      window.removeEventListener("mouseup", onMouseUp);
       this.style.cursor = "default";
     };
 
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup",   onMouseUp);
+    window.addEventListener("mouseup", onMouseUp);
     this.style.cursor = "grabbing";
   }
 
