@@ -29,24 +29,24 @@ WorkZone: принимает брошенные полигоны, отображ
 
 Структура проекта
 
-├── public/
-│   └── index.html          # Главная HTML-страница
-├── src/
-│   ├── components/
-│   │   ├── buffer-zone/
-│   │   │   └── buffer-zone.js
-│   │   ├── work-zone/
-│   │   │   └── work-zone.js
-│   │   └── section-container/
-│   │       └── section-container.js
-│   ├── utils/
-│   │   ├── random.js       # getRandomNumber(min, max)
-│   │   └── svg-generator.js# generateSvgPolygons(container)
-│   └── index.js            # Точка входа (импорт компонентов)
-├── webpack.dev.js          # Конфигурация dev-сервера
-├── webpack.prod.js         # Конфигурация сборки в продакшен
-├── package.json
-└── README.md
+├── public/<br />
+│   └── index.html          # Главная HTML-страница<br />
+├── src/<br />
+│   ├── components/<br />
+│   │   ├── buffer-zone/<br />
+│   │   │   └── buffer-zone.js<br />
+│   │   ├── work-zone/<br />
+│   │   │   └── work-zone.js<br />
+│   │   └── section-container/<br />
+│   │       └── section-container.js<br />
+│   ├── utils/<br />
+│   │   ├── random.js       # getRandomNumber(min, max)<br />
+│   │   └── svg-generator.js# generateSvgPolygons(container)<br />
+│   └── index.js            # Точка входа (импорт компонентов)<br />
+├── webpack.dev.js          # Конфигурация dev-сервера<br />
+├── webpack.prod.js         # Конфигурация сборки в продакшен<br />
+├── package.json<br />
+└── README.md<br />
 
 КОМПОНЕНТЫ
 
