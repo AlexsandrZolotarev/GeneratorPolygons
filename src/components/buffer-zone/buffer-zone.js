@@ -1,5 +1,4 @@
 import Sortable from "sortablejs";
-import { getRandomNumber } from "../../utils/random";
 import { generateSvgPolygons } from "../../utils/svg-generator";
 
 const template = document.createElement("template");
@@ -86,5 +85,6 @@ class BufferZone extends HTMLElement {
   generatePolygons() {
     generateSvgPolygons(this.bufferZone);
   }
+ 
 }
 customElements.define("buffer-zone", BufferZone);

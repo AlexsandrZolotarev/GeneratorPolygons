@@ -127,6 +127,7 @@ export class WorkZone extends HTMLElement {
     this.loadPolygons();
     this.updateView();
   }
+  
   updatePosition() {
     this.contentElement.querySelectorAll("svg").forEach((svg) => {
       const rect = svg.getBoundingClientRect();
