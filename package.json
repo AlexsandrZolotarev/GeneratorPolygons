@@ -1,12 +1,17 @@
 {
   "name": "test-task",
   "private": true,
+  "homepage": "https://alexsandrzolotarev.github.io/GeneratorPolygons",
   "scripts": {
     "start": "webpack serve --config webpack.dev.js",
-    "build": "webpack --config webpack.prod.js"
+    "build": "webpack --config webpack.prod.js",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist -b gh-pages -r https://github.com/AlexsandrZolotarev/GeneratorPolygons.git"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
+    "gh-pages": "^6.3.0",
+    "html-webpack-plugin": "^5.6.3",
     "style-loader": "^4.0.0",
     "webpack": "^5.73.0",
     "webpack-cli": "^4.10.0",
