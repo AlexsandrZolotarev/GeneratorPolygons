@@ -5,6 +5,7 @@ const template = document.createElement("template");
 template.innerHTML = `
 <style>
       .buffer-zone{
+        pis
         display: flex;
         flex-wrap: wrap;
         overflow: auto;
@@ -37,20 +38,20 @@ class BufferZone extends HTMLElement {
   connectedCallback() {
     this.bufferZone = this.shadowRoot.querySelector(".buffer-zone");
     Sortable.create(this.bufferZone, {
-     group: {
-        name: 'polygons',
-        pull: true,  
-        put: true  
+      group: {
+        name: "polygons",
+        pull: true,
+        put: true,
       },
       animation: 150,
       sort: false,
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen'
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
     });
     this.loadPolygons();
   }
-  disconnectedCallback() {
-  }
+  disconnectedCallback() {}
+
   loadPolygons() {
     const saved = localStorage.getItem("polygonsBufferZone");
     if (!saved) return;
@@ -70,13 +71,14 @@ class BufferZone extends HTMLElement {
     });
   }
   saveBufferZone() {
-    const arr = Array.from(this.bufferZone.querySelectorAll('svg'))
-      .map(svg => svg.outerHTML);
-    localStorage.setItem('polygonsBufferZone', JSON.stringify(arr));
+    const arr = Array.from(this.bufferZone.querySelectorAll("svg")).map(
+      (svg) => svg.outerHTML
+    );
+    localStorage.setItem("polygonsBufferZone", JSON.stringify(arr));
   }
   clearBufferZone() {
-    this.bufferZone.innerHTML = '';
-    localStorage.removeItem('polygonsBufferZone');
+    this.bufferZone.innerHTML = "";
+    localStorage.removeItem("polygonsBufferZone");
   }
   deletePolygons() {
     this.bufferZone.innerHTML = "";
@@ -85,6 +87,5 @@ class BufferZone extends HTMLElement {
   generatePolygons() {
     generateSvgPolygons(this.bufferZone);
   }
- 
 }
 customElements.define("buffer-zone", BufferZone);

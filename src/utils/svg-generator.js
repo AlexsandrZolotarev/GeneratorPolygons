@@ -3,8 +3,7 @@ function getRandomNumber(min, max) {
 }
 export function generateSvgPolygons(container) {
   const countPolygons = getRandomNumber(5, 20);
-  if(container.children.length > 0) container.replaceChildren();
-  console.log(container.children);
+  if (container.children.length > 0) container.replaceChildren();
   for (let i = 0; i < countPolygons; i++) {
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");

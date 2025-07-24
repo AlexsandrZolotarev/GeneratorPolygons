@@ -21,7 +21,24 @@ template.innerHTML = `
       user-select: none;
       touch-action: none;
     }
-    .grid {
+    .work-zone{
+      background: #2d2d2d;
+      min-height: 300px;
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      height: 400px;
+    }
+    .work-zone__content{
+      position: absolute;
+      left: 36px;
+      top: 0;
+      width: calc(100% - 36px);
+      height: calc(100% - 33px);
+      z-index: 2;
+    }
+    .work-zone__grid {
       position: absolute;
       inset: 0;
       background:
@@ -40,36 +57,30 @@ template.innerHTML = `
         calc(var(--cell-size) * var(--scale-factor));
       background-position: var(--grid-offset-x) var(--grid-offset-y);
     }
-    .content {
-      position: absolute;
-      inset: 0;
-      transform: translate(var(--offset-x), var(--offset-y)) scale(var(--scale-factor));
-      transform-origin: 0 0;
-    }
-    .axis-x, .axis-y {
+    .work-zone__axis-x, .work-zone__axis-y {
       position: absolute;
       pointer-events: none;
       font: 15px sans-serif;
       color: #000;
       background: #595858ff;
     }
-    .axis-x {
+    .work-zone__axis-x {
       bottom: 0; left: 0;
       height: 24px;
       width: 100%;
       padding-bottom: 10px;
     }
-    .axis-x span {
+    .work-zone__axis-x span {
       position: absolute;
       bottom: 5px;
       transform: translateX(-50%);
     }
-    .axis-y {
+    .work-zone__axis-y {
       top: 0; left: 0;
       width: 36px;
       height: 100%;
     }
-    .axis-y span {
+    .work-zone__axis-y span {
       position: absolute;
       left: 33%;
       transform: translateY(-50%);
@@ -83,11 +94,13 @@ template.innerHTML = `
       outline: 2px solid green;
     }
   </style>
+  <div class="work-zone">
+    <div class="work-zone__grid"></div>
+    <div class="work-zone__content"></div>
+    <div class="work-zone__axis-x"></div>
+    <div class="work-zone__axis-y"></div>
+  </div>
 
-  <div class="grid"></div>
-  <div class="content"></div>
-  <div class="axis-x"></div>
-  <div class="axis-y"></div>
 `;
 
 export class WorkZone extends HTMLElement {
@@ -96,10 +109,10 @@ export class WorkZone extends HTMLElement {
     this.attachShadow({ mode: "open" }).appendChild(
       template.content.cloneNode(true)
     );
-    this.gridElement = this.shadowRoot.querySelector(".grid");
-    this.contentElement = this.shadowRoot.querySelector(".content");
-    this.axisXContainer = this.shadowRoot.querySelector(".axis-x");
-    this.axisYContainer = this.shadowRoot.querySelector(".axis-y");
+    this.gridElement = this.shadowRoot.querySelector(".work-zone__grid");
+    this.contentElement = this.shadowRoot.querySelector(".work-zone__content");
+    this.axisXContainer = this.shadowRoot.querySelector(".work-zone__axis-x");
+    this.axisYContainer = this.shadowRoot.querySelector(".work-zone__axis-y");
 
     this.scaleFactor = 1;
     this.offsetX = 0;
@@ -115,32 +128,54 @@ export class WorkZone extends HTMLElement {
     Sortable.create(this.contentElement, {
       group: {
         name: "polygons",
-        pull: true,
+        pull: false,
         put: true,
       },
-      animation: 150,
+      animation: 0,
       sort: false,
+      filter: ".placed",
       ghostClass: "sortable-ghost",
       chosenClass: "sortable-chosen",
-      onEnd: this.updatePosition.bind(this),
+      onAdd: this.handlePolygonDrop.bind(this),
+
+      onChoose: function (/**Event*/ evt) {
+        console.log(evt, "onChoose");
+      },
+
+      onUnchoose: function (/**Event*/ evt) {
+        console.log(evt, "onUnchoose");
+      },
     });
     this.loadPolygons();
     this.updateView();
   }
-  
-  updatePosition() {
-    this.contentElement.querySelectorAll("svg").forEach((svg) => {
-      const rect = svg.getBoundingClientRect();
-      const parentRect = this.contentElement.getBoundingClientRect();
+  handlePolygonDrop(event) {
+    const polygon = event.item;
+    const mouseEvent = event.originalEvent;
+    const dropXClient = mouseEvent.clientX;
+    const dropYClient = mouseEvent.clientY;
+    const contentBounds = this.contentElement.getBoundingClientRect();
 
-      const x = (rect.left - parentRect.left) / this.scaleFactor - this.offsetX;
-      const y = (rect.top - parentRect.top) / this.scaleFactor - this.offsetY;
-      svg.style.position = "absolute";
-      svg.style.left = `${x}px`;
-      svg.style.top = `${y}px`;
-    });
+    const relativeX = dropXClient - contentBounds.left;
+    const relativeY = dropYClient - contentBounds.top;
 
-    this.saveWorkZone();
+    const worldX = relativeX / this.scaleFactor - this.offsetX;
+    const worldY = relativeY / this.scaleFactor - this.offsetY;
+
+    polygon.dataset.worldX = worldX;
+    polygon.dataset.worldY = worldY;
+
+    polygon.style.position = "absolute";
+    this.renderSinglePolygon(polygon);
+  }
+
+  renderSinglePolygon(svgElement) {
+    const worldX = parseFloat(svgElement.dataset.worldX);
+    const worldY = parseFloat(svgElement.dataset.worldY);
+    const screenX = (worldX + this.offsetX) * this.scaleFactor;
+    const screenY = (worldY + this.offsetY) * this.scaleFactor;
+    svgElement.classList.add("placed");
+    svgElement.style.transform = `translate(${screenX}px, ${screenY}px) scale(${this.scaleFactor})`;
   }
   saveWorkZone() {
     const arr = Array.from(this.contentElement.querySelectorAll("svg")).map(
@@ -170,7 +205,7 @@ export class WorkZone extends HTMLElement {
       return;
     }
 
-    items.forEach(({ svg: svgString, left, top }) => {
+    items.forEach(({ svg: svgString }) => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = svgString;
       const svg = wrapper.firstElementChild;
@@ -191,6 +226,9 @@ export class WorkZone extends HTMLElement {
     hostStyle.setProperty("--grid-offset-x", `${gridOffsetX}px`);
     hostStyle.setProperty("--grid-offset-y", `${gridOffsetY}px`);
 
+    this.contentElement
+      .querySelectorAll("svg")
+      .forEach((svgEl) => this.renderSinglePolygon(svgEl));
     this.renderAxes();
   }
 
@@ -225,7 +263,6 @@ export class WorkZone extends HTMLElement {
     this.scaleFactor = Math.min(Math.max(this.scaleFactor + zoomDelta, 0.2), 5);
     this.updateView();
   }
-
   onMouseDown(event) {
     if (event.button !== 0) return;
     event.preventDefault();
